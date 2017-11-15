@@ -22,13 +22,13 @@ When pointers cross.
 /*   Java code for partitioning   */
 /*- ----------------------------------------------------------------------------------------------------*/
 private static int partition(Comparable[] a,int lo,int hi){
-  int i = lo,j = hi+1;
+  int i = lo,j = hi+1;               //j初始的值为hi + 1,因为后面为--j形式
   Comparable v = a[lo];
 
 while(true){
     while(less(a[++i],v))  if(i == hi) break;    //i == hi是为了防止最左边是最大值的情况而陷入死循坏
     while(less(v,a[--j]))  if(j == lo) break;    //j == lo是为了防止最左边是最小值的情况而陷入死循坏
-    if(j <= i)  break;
+    if(j <= i)  break;         //pointers cross
     exch(a,i,j);
   }
   exch(a,lo,j);
@@ -152,7 +152,7 @@ class StdRandom{
  * */
 /*- ----------------------------------------------------------------------------------------------------*/
 
-/* Quicksort: practical improvements */
+/* Quicksort: practical improvementsⅠ—— Insertion sort small subarrays. */
 /*
 Insertion sort small subarrays.
 􀉾Even quicksort has too much overhead for tiny subarrays.
@@ -208,6 +208,135 @@ class Insertion{
    A  C  E  E  I  K  L  M  O  P  Q  R  S  T  U  X  
    -----------------------------------------------  
  * */
+
+
+
+/* Quicksort: practical improvements Ⅱ —— Median of sample*/
 /*
-剩下的明天再写
+Median of sample.
+􀉾Best choice of pivot item = median.
+􀉾Estimate true median by taking median of sample.
+􀉾Median-of-3 (random) items.
+
+Doing so will give a slightly better partition,but at the cost of computing the median
+*/
+/* 修改Quicksort中的sort() */
+/*---------------------------------------------------------------------------------*/
+private static void sort(Comparable[] a,int lo,int hi){
+	if(hi <= lo)  return;
+
+	int m = medianOf3(lo,lo + (hi - lo)/2,hi);        //每一次sort都要计算medianOf3
+	exch(a,m,lo);              //交换a[medianOf3]与a[lo]
+	
+	int j = partition(a,lo,hi);
+	sort(a,lo,j-1);
+	sort(a,j+1,hi);		
+}
+/*---------------------------------------------------------------------------------*/
+
+/* implementation of median */
+/*---------------------------------------------------------------------------------*/
+private static int medianOf3(int u,int v,int w){
+	return (u + v + w)/3;
+}
+/*---------------------------------------------------------------------------------*/
+
+
+/* Quicksort: practical improvements Ⅲ —— 3-way partitioning */
+/*
+Often, purpose of sort is to bring items with equal keys together.
+——Sort population by age.
+——Remove duplicates from mailing list.
+——Sort job applicants by college attended.
+
+Typical characteristics of such applications.
+——Huge array.
+——Small number of key values.
+*/
+
+/* 3-way partitioning */
+/*
+Goal. Partition array into 3 parts so that:
+——Entries between lt and gt equal to partition item v.
+——No larger entries to left of lt.
+——No smaller entries to right of gt.
+
+Dijkstra 3-way partitioning demo 
+①Let v be partitioning item a[lo].
+②Scan i from left to right.
+– (a[i] < v): exchange a[lt] with a[i]; increment both lt and i
+– (a[i] > v): exchange a[gt] with a[i]; decrement gt
+– (a[i] == v): increment i
+*/
+
+/* 3-way quicksort: Java implementation */
+/*---------------------------------------------------------------------------------------*/
+private static void sort(Comparable[] a,int lo,int hi){
+	if(hi <= lo)  return;     //递归结束标志
+ 
+	int lt = lo,gt = hi;   //lt,gt初始位置分别为lo,hi
+	int i = lo;
+
+	Comparable v = a[lo];
+	while(i <= gt){
+		int cmp = a[i].compareTo(v);  
+
+		if(cmp < 0) exch(a,lt++,i++);    /* (a[i] < v): exchange a[lt] with a[i]; increment both lt and i */
+		else if(cmp > 0) exch(a,gt--,i);  /* (a[i] > v): exchange a[gt] with a[i]; decrement gt */
+		else i++;		/* (a[i] == v): increment i */	
+	}		
+
+	sort(a,lo,lt-1);
+	sort(a,gt+1,hi);
+}
+/*---------------------------------------------------------------------------------------*/
+
+
+
+
+/* Selection */
+/*
+Goal. Given an array of N items, find a kth smallest item.
+Ex. Min (k = 0), max (k = N - 1), median (k = N / 2).
+
+Applications.
+——Order statistics.
+——Find the "top k."
+
+Partition array so that:
+——Entry a[j] is in place.
+——No larger entry to the left of j.
+——No smaller entry to the right of j.
+
+Repeat in one subarray, depending on j; finished when j equals k.
+*/
+
+
+/* Jave implementation of selection */
+/*---------------------------------------------------------------------------------------*/
+public static Comparable select(Comparable[] a,int k){
+	StdRandom.shuffle(a);
+
+	int lo = 0;
+	int hi = a.length - 1;
+
+	while(lo < hi){
+		int j = partition(a,lo,hi);
+
+		if(k == j) return a[j];
+		else if(k < j) hi = j - 1;
+		else lo = j + 1;
+	}
+	return a[k];
+}
+/*---------------------------------------------------------------------------------------*/
+/*
+在JDK1.8中输入结果为： 
+- ----------------------------------------------
+Input the array of String
+X Q U I C K S O R T E A M P L E exit
+The array of String is :
+X  Q  U  I  C  K  S  O  R  T  E  A  M  P  L  E  
+The 4th smallest is I
+- -----------------------------------------------
 */
